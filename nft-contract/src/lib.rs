@@ -3,7 +3,7 @@ use near_sdk::collections::{LazyOption, UnorderedSet};
 use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{collections::LookupMap, AccountId};
-use near_sdk::{env, init, near_bindgen, CryptoHash, Balance, Promise};
+use near_sdk::{env, init, near_bindgen, Balance, CryptoHash, Promise};
 
 pub type TokenId = String;
 
@@ -74,5 +74,73 @@ impl Contract {
                 reference_hash: None,
             },
         )
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm-32")))]
+mod tests {
+    use super::*;
+
+    use near_sdk::test_utils::{accounts, VMContextBuilder};
+    use near_sdk::testing_env;
+    use near_sdk::MockedBlockchain;
+
+    const MINT_STORAGE_COST: u128 = 58_700_000_000_000_000_000_000;
+
+    fn get_context(is_view: bool) -> VMContextBuilder {
+        let mut builder = VMContextBuilder::new();
+        builder
+            .current_account_id(accounts(0))
+            .signer_account_id(accounts(0))
+            .predecessor_account_id(accounts(0))
+            .is_view(is_view);
+
+        builder
+    }
+
+    fn get_sample_metadata() -> TokenMetadata {
+        TokenMetadata {
+            title: Some("TOKEN TEST".to_owned()),
+            description: Some("Description".to_owned()),
+            media: None,
+            media_hash: None,
+            copies: None,
+            issued_at: None,
+            expires_at: None,
+            starts_at: None,
+            updated_at: None,
+            extra: None,
+            reference: None,
+            reference_hash: None,
+        }
+    }
+
+    #[test]
+    fn test_mint_token() {
+        let mut context = get_context(false);
+        testing_env!(context.build());
+
+        // Init contract
+        let mut contract = Contract::new_default_metadata(accounts(0).to_string());
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(MINT_STORAGE_COST)
+            .predecessor_account_id(accounts(0))
+            .build());
+
+        let token_id = "ZNG_NFT".to_string();
+        contract.nft_mint(
+            token_id.clone(),
+            get_sample_metadata(),
+            accounts(0).to_string(),
+        );
+
+        let token = contract.ntf_token(token_id.clone()).unwrap();
+
+        // Test người sở hữu token vừa mint có đúng là accounts(0) không
+        assert_eq!(accounts(0).to_string(), token.owner_id);
+        assert_eq!(token_id.clone(), token.token_id);
+        assert_eq!(token.metadata, get_sample_metadata());
     }
 }

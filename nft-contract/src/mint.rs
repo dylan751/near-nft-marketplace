@@ -28,7 +28,7 @@ impl Contract {
 
         // Thêm token metadata
         self.token_metadata_by_id.insert(&token_id, &metadata);
-        
+
         // Thêm token vào danh sách sở hữu bởi owner
         self.internal_add_token_to_owner(&token_id, &token.owner_id);
 
@@ -36,5 +36,22 @@ impl Contract {
         let after_storage_usage = env::storage_usage();
         // Refund NEAR
         refund_deposit(after_storage_usage - before_storage_usage);
+    }
+
+    // Lấy thông tin token dưới dạng JsonToken
+    pub fn ntf_token(&self, token_id: TokenId) -> Option<JsonToken> {
+        let token = self.tokens_by_id.get(&token_id);
+
+        if let Some(token) = token {
+            let metadata = self.token_metadata_by_id.get(&token_id).unwrap();
+
+            Some(JsonToken {
+                owner_id: token.owner_id,
+                token_id,
+                metadata,
+            })
+        } else {
+            None
+        }
     }
 }
