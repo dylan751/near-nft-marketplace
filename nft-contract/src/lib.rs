@@ -1,15 +1,21 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LazyOption;
+use near_sdk::collections::{LazyOption, UnorderedSet};
 use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{collections::LookupMap, AccountId};
-use near_sdk::{init, near_bindgen};
+use near_sdk::{env, init, near_bindgen, CryptoHash, Balance, Promise};
 
 pub type TokenId = String;
 
-use crate::metadata::*;
+use crate::internal::*;
+pub use crate::metadata::*;
+pub use crate::mint::*;
+pub use crate::utils::*;
 
+mod internal;
 mod metadata;
+mod mint;
+mod utils;
 
 // State cơ bản của NFT contract
 #[near_bindgen]
@@ -17,7 +23,7 @@ mod metadata;
 struct Contract {
     pub owner_id: AccountId,
 
-    pub tokens_per_owner: LookupMap<AccountId, TokenId>, // Lưu danh sách token mà user sở hữu
+    pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>, // Lưu danh sách token mà user sở hữu
 
     pub tokens_by_id: LookupMap<TokenId, Token>, // Mapping token id với các data mở rộng của Token
 
@@ -32,6 +38,9 @@ pub enum StorageKey {
     ContractMetadataKey,
     TokenByIdKey,
     TokenMetadataByIdKey,
+    TokenPerOwnerInnerKey {
+        account_id_hash: CryptoHash, // Để đảm bảo các account_id không trùng nhau
+    },
 }
 
 impl Contract {
