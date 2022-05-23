@@ -39,7 +39,7 @@ impl Contract {
     }
 
     // Lấy thông tin token dưới dạng JsonToken
-    pub fn ntf_token(&self, token_id: TokenId) -> Option<JsonToken> {
+    pub fn nft_token(&self, token_id: TokenId) -> Option<JsonToken> {
         let token = self.tokens_by_id.get(&token_id);
 
         if let Some(token) = token {

@@ -1,5 +1,5 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, UnorderedSet};
+use near_sdk::collections::{LazyOption, UnorderedSet, UnorderedMap};
 use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{collections::LookupMap, AccountId};
@@ -7,11 +7,13 @@ use near_sdk::{env, init, near_bindgen, Balance, CryptoHash, Promise};
 
 pub type TokenId = String;
 
+pub use crate::enumeration::*;
 use crate::internal::*;
 pub use crate::metadata::*;
 pub use crate::mint::*;
 pub use crate::utils::*;
 
+mod enumeration;
 mod internal;
 mod metadata;
 mod mint;
@@ -25,9 +27,9 @@ struct Contract {
 
     pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>, // Lưu danh sách token mà user sở hữu
 
-    pub tokens_by_id: LookupMap<TokenId, Token>, // Mapping token id với các data mở rộng của Token
+    pub tokens_by_id: LookupMap<TokenId, Token>, // Mapping token id với các data mở rộng của Token (Danh sách tất cả token đang có trong contract)
 
-    pub token_metadata_by_id: LookupMap<TokenId, TokenMetadata>, // Mapping token id với token metadata
+    pub token_metadata_by_id: UnorderedMap<TokenId, TokenMetadata>, // Mapping token id với token metadata
 
     pub metadata: LazyOption<NFTContractMetadata>,
 }
@@ -54,7 +56,7 @@ impl Contract {
             ),
             tokens_per_owner: LookupMap::new(StorageKey::TokenPerOwnerKey.try_to_vec().unwrap()),
             tokens_by_id: LookupMap::new(StorageKey::TokenByIdKey.try_to_vec().unwrap()),
-            token_metadata_by_id: LookupMap::new(
+            token_metadata_by_id: UnorderedMap::new(
                 StorageKey::TokenMetadataByIdKey.try_to_vec().unwrap(),
             ),
         }
@@ -136,7 +138,7 @@ mod tests {
             accounts(0).to_string(),
         );
 
-        let token = contract.ntf_token(token_id.clone()).unwrap();
+        let token = contract.nft_token(token_id.clone()).unwrap();
 
         // Test người sở hữu token vừa mint có đúng là accounts(0) không
         assert_eq!(accounts(0).to_string(), token.owner_id);
