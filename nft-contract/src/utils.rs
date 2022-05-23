@@ -27,3 +27,7 @@ pub(crate) fn refund_deposit(storage_used: u64) {
         Promise::new(env::predecessor_account_id()).transfer(refund_amount);
     }
 }
+
+pub(crate) fn assert_one_yocto() {
+    assert_eq!(env::attached_deposit(), 1, "Required attached deposit of exact 1 yoctoNear");
+}

@@ -1,6 +1,8 @@
 // Lấy danh sách token của User
 use crate::*;
 
+// Các hàm theo chuẩn NEP-181 của NEAR - Enumeration
+// Xem thêm tại: https://nomicon.io/Standards/Tokens/NonFungibleToken/Enumeration
 #[near_bindgen]
 impl Contract {
     // Lấy tổng số token đang có trong contract

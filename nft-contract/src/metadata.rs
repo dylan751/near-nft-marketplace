@@ -13,6 +13,8 @@ pub struct JsonToken {
     pub metadata: TokenMetadata,
 }
 
+// Các metadata theo chuẩn NEP-177 của NEAR - Metadata
+// Xem thêm tại: https://nomicon.io/Standards/Tokens/NonFungibleToken/Metadata
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct NFTContractMetadata {

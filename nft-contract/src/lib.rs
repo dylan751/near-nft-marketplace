@@ -1,9 +1,12 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, UnorderedSet, UnorderedMap};
+use near_sdk::collections::{LazyOption, UnorderedMap, UnorderedSet};
 use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{collections::LookupMap, AccountId};
-use near_sdk::{env, init, near_bindgen, Balance, CryptoHash, Promise};
+use near_sdk::{
+    env, ext_contract, init, log, near_bindgen, Balance, CryptoHash, Gas, Promise, PromiseOrValue,
+    PromiseResult,
+};
 
 pub type TokenId = String;
 
@@ -11,12 +14,14 @@ pub use crate::enumeration::*;
 use crate::internal::*;
 pub use crate::metadata::*;
 pub use crate::mint::*;
+pub use crate::nft_core::*;
 pub use crate::utils::*;
 
 mod enumeration;
 mod internal;
 mod metadata;
 mod mint;
+mod nft_core;
 mod utils;
 
 // State cơ bản của NFT contract
@@ -144,5 +149,46 @@ mod tests {
         assert_eq!(accounts(0).to_string(), token.owner_id);
         assert_eq!(token_id.clone(), token.token_id);
         assert_eq!(token.metadata, get_sample_metadata());
+    }
+
+    #[test]
+    fn test_transfer_nft() {
+        // --- Init test environment ---
+        let mut context = get_context(false);
+        testing_env!(context.build());
+
+        // --- Init Contract ---
+        let mut contract = Contract::new_default_metadata(accounts(0).to_string());
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(MINT_STORAGE_COST)
+            .predecessor_account_id(accounts(0))
+            .build());
+
+        // --- Tạo 1 token có id là zng_nft ---
+        let token_id = "zng_nft".to_owned();
+        contract.nft_mint(
+            token_id.clone(),
+            get_sample_metadata(),
+            accounts(0).to_string(),
+        );
+
+        let token = contract.nft_token(token_id.clone()).unwrap();
+        // --- Kiểm tra các thông tin về owner ---
+        assert_eq!(token.owner_id, accounts(0).to_string());
+        assert_eq!(token.token_id, token_id);
+        assert_eq!(get_sample_metadata(), token.metadata);
+
+        testing_env!(context.attached_deposit(1).build());
+
+        // --- Transfer nft từ accounts(0) sang accounts(1)
+        contract.nft_transfer(accounts(1).to_string(), token_id.clone(), None);
+
+        let new_token = contract.nft_token(token_id.clone()).unwrap();
+        // --- Kiểm tra các thông tin về owner
+        assert_eq!(new_token.owner_id, accounts(1).to_string());
+        assert_eq!(new_token.token_id, token_id);
+        assert_eq!(get_sample_metadata(), new_token.metadata);
     }
 }
