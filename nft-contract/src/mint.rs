@@ -17,6 +17,8 @@ impl Contract {
 
         let token = Token {
             owner_id: receiver_id,
+            approved_account_ids: HashMap::default(),
+            next_approval_id: 0,
         };
 
         // Nếu token_id đã tồn tại trong list tokens_by_id thì báo lỗi

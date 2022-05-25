@@ -28,8 +28,15 @@ impl Contract {
     }
 
     // Xoá token khỏi owner
-    pub(crate) fn internal_remove_token_from_owner(&mut self, token_id: &TokenId, account_id: &AccountId) {
-        let mut tokens_set = self.tokens_per_owner.get(account_id).expect("Token should be owned by sender");
+    pub(crate) fn internal_remove_token_from_owner(
+        &mut self,
+        token_id: &TokenId,
+        account_id: &AccountId,
+    ) {
+        let mut tokens_set = self
+            .tokens_per_owner
+            .get(account_id)
+            .expect("Token should be owned by sender");
 
         // Xoá token_id khỏi tokens_set
         tokens_set.remove(token_id);
@@ -55,16 +62,37 @@ impl Contract {
         sender_id: &AccountId,
         receiver_id: &AccountId,
         token_id: &TokenId,
+        approval_id: Option<u64>,
         memo: Option<String>,
     ) -> Token {
         // Kiểm tra token_id có tồn tại không?
         let token = self.tokens_by_id.get(token_id).expect("Not found token");
         // sender_id có phải là owner của token hay không?
+        // Nếu sender_id không phải owner của token -> Check xem sender_id có phải approval_id không (có quyền transfer token thay owner không)
+        // Chỉ có owner của Token HOẶC người được approved mới có quyền transfer Token
         if sender_id != &token.owner_id {
-            env::panic("Sender must be the token's owner".as_bytes());
+            if !token.approved_account_ids.contains_key(sender_id) {
+                env::panic("Sender must be the token owner or the approved account".as_bytes());
+            }
+
+            if let Some(enforced_approval_id) = approval_id {
+                let actual_approval_id = token
+                    .approved_account_ids
+                    .get(sender_id)
+                    .expect("Sender is not approved to transfer token");
+
+                assert_eq!(
+                    actual_approval_id, &enforced_approval_id,
+                    "The actual approval id {} is different from the given approval id {}",
+                    actual_approval_id, enforced_approval_id
+                );
+            }
         };
         // sender_id và receiver_id trùng nhau (gửi cho chính mình) không?
-        assert_ne!(&token.owner_id, receiver_id, "The token owner and the receiver should be different");
+        assert_ne!(
+            &token.owner_id, receiver_id,
+            "The token owner and the receiver should be different"
+        );
 
         // Xoá token khỏi owner cũ
         self.internal_remove_token_from_owner(&token_id, &token.owner_id);
@@ -73,6 +101,8 @@ impl Contract {
 
         let new_token = Token {
             owner_id: receiver_id.clone(),
+            approved_account_ids: HashMap::default(), // Sau khi chuyển token cho người khác, xoá toàn bộ approved_account_ids
+            next_approval_id: token.next_approval_id,
         };
 
         // Thêm token mới vào list tất cả tokens

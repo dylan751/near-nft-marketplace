@@ -7,7 +7,13 @@ const NO_DEPOSIT: Balance = 0;
 // Các trait, interface, function theo chuẩn NEP-171 của NEAR - Core Functionality
 // Xem thêm tại: https://nomicon.io/Standards/Tokens/NonFungibleToken/Core
 pub trait NonFungibleTokenCore {
-    fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId, memo: Option<String>);
+    fn nft_transfer(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: TokenId,
+        approval_id: u64,
+        memo: Option<String>,
+    );
 
     // Return true nếu transfer NFT được thực hiện thành công
     fn nft_transfer_call(
@@ -15,6 +21,7 @@ pub trait NonFungibleTokenCore {
         receiver_id: AccountId,
         token_id: TokenId,
         memo: Option<String>,
+        approval_id: u64,
         msg: String,
     ) -> PromiseOrValue<bool>;
 }
@@ -42,6 +49,7 @@ trait NonFungibleTokenResolver {
         owner_id: AccountId,
         receiver_id: AccountId,
         token_id: TokenId,
+        approved_account_ids: HashMap<AccountId, u64>,
     ) -> bool;
 }
 
@@ -51,6 +59,7 @@ trait NonFungibleTokenResolver {
         owner_id: AccountId,
         receiver_id: AccountId,
         token_id: TokenId,
+        approved_account_ids: HashMap<AccountId, u64>,
     ) -> bool;
 }
 
@@ -59,11 +68,21 @@ trait NonFungibleTokenResolver {
 impl NonFungibleTokenCore for Contract {
     // Yêu cầu deposit 1 yoctoNear để bảo mật cho user
     #[payable]
-    fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId, memo: Option<String>) {
+    fn nft_transfer(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: TokenId,
+        approval_id: u64,
+        memo: Option<String>,
+    ) {
         assert_one_yocto();
         let sender_id = env::predecessor_account_id();
 
-        self.internal_transfer(&sender_id, &receiver_id, &token_id, memo);
+        let previous_token =
+            self.internal_transfer(&sender_id, &receiver_id, &token_id, Some(approval_id), memo);
+
+        // Refund nếu deposit thừa
+        refund_approved_account_ids(sender_id, &previous_token.approved_account_ids);
     }
 
     #[payable]
@@ -72,12 +91,14 @@ impl NonFungibleTokenCore for Contract {
         receiver_id: AccountId,
         token_id: TokenId,
         memo: Option<String>,
+        approval_id: u64,
         msg: String,
     ) -> PromiseOrValue<bool> {
         assert_one_yocto();
         let sender_id = env::predecessor_account_id();
 
-        let previous_token = self.internal_transfer(&sender_id, &receiver_id, &token_id, memo);
+        let previous_token =
+            self.internal_transfer(&sender_id, &receiver_id, &token_id, Some(approval_id), memo);
 
         // Thực hiện Cross Contract Call sang Contract của người nhận
         // -> Gọi hàm nft_on_transfer
@@ -94,6 +115,7 @@ impl NonFungibleTokenCore for Contract {
             previous_token.owner_id,
             receiver_id,
             token_id,
+            previous_token.approved_account_ids,
             &env::current_account_id(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
@@ -112,6 +134,7 @@ impl NonFungibleTokenResolver for Contract {
         owner_id: AccountId,
         receiver_id: AccountId,
         token_id: TokenId,
+        approved_account_ids: HashMap<AccountId, u64>,
     ) -> bool {
         if let PromiseResult::Successful(value) = env::promise_result(0) {
             // Thành công, chỉ có 1 promise
@@ -122,24 +145,35 @@ impl NonFungibleTokenResolver for Contract {
 
         // Xử lý các case không thể rollback lại được
         let mut token = if let Some(token) = self.tokens_by_id.get(&token_id) {
-            // Nếu người nhận ko phải là owner -> Không thực hiện được rollback
+            // Nếu người nhận ko phải là owner -> Không thực hiện được -> rollback
             if token.owner_id != receiver_id {
+                refund_approved_account_ids(owner_id, &approved_account_ids);
                 return true;
             }
             token
         } else {
-            // Nếu không tìm thấy token -> Không thực hiện được rollback
+            // Nếu không tìm thấy token -> Không thực hiện được -> rollback
+            refund_approved_account_ids(owner_id, &approved_account_ids);
             return true;
         };
 
         // Xử lý các case rollback được
-        log!("Rollback {} from @{} to @{}", token_id, receiver_id, owner_id);
+        log!(
+            "Rollback {} from @{} to @{}",
+            token_id,
+            receiver_id,
+            owner_id
+        );
 
         self.internal_remove_token_from_owner(&token_id, &receiver_id); // Xoá token của người vừa nhận
         self.internal_add_token_to_owner(&token_id, &owner_id); // Trả lại token cho owner cũ
 
         // Lấy lại các giá trị của token
         token.owner_id = owner_id;
+
+        refund_approved_account_ids(receiver_id, &token.approved_account_ids);
+        token.approved_account_ids = approved_account_ids;
+        
         self.tokens_by_id.insert(&token_id, &token);
 
         false // Cho front-end biết là giao dịch thất bại -> Rollback toàn bộ data

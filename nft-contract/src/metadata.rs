@@ -3,6 +3,10 @@ use crate::*;
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Token {
     pub owner_id: AccountId,
+    // Danh sách các accounts được approved để transfer Token này
+    pub approved_account_ids: HashMap<AccountId, u64>,
+    // Id của approve tiếp theo
+    pub next_approval_id: u64
 }
 
 #[derive(Serialize, Deserialize)]

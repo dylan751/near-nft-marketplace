@@ -7,9 +7,11 @@ use near_sdk::{
     env, ext_contract, init, log, near_bindgen, Balance, CryptoHash, Gas, Promise, PromiseOrValue,
     PromiseResult,
 };
+use std::collections::HashMap;
 
 pub type TokenId = String;
 
+pub use crate::approval::*;
 pub use crate::enumeration::*;
 use crate::internal::*;
 pub use crate::metadata::*;
@@ -17,6 +19,7 @@ pub use crate::mint::*;
 pub use crate::nft_core::*;
 pub use crate::utils::*;
 
+mod approval;
 mod enumeration;
 mod internal;
 mod metadata;
@@ -183,7 +186,7 @@ mod tests {
         testing_env!(context.attached_deposit(1).build());
 
         // --- Transfer nft từ accounts(0) sang accounts(1)
-        contract.nft_transfer(accounts(1).to_string(), token_id.clone(), None);
+        contract.nft_transfer(accounts(1).to_string(), token_id.clone(), 1, None);
 
         let new_token = contract.nft_token(token_id.clone()).unwrap();
         // --- Kiểm tra các thông tin về owner
