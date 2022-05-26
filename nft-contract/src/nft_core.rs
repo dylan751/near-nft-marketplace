@@ -46,20 +46,24 @@ trait NonFungibleTokenResolver {
     // Chứa logic để thực hiện rollback
     fn nft_resolve_transfer(
         &mut self,
+        authorized_id: Option<AccountId>,
         owner_id: AccountId,
         receiver_id: AccountId,
         token_id: TokenId,
         approved_account_ids: HashMap<AccountId, u64>,
+        memo: Option<String>,
     ) -> bool;
 }
 
 trait NonFungibleTokenResolver {
     fn nft_resolve_transfer(
         &mut self,
+        authorized_id: Option<AccountId>,
         owner_id: AccountId,
         receiver_id: AccountId,
         token_id: TokenId,
         approved_account_ids: HashMap<AccountId, u64>,
+        memo: Option<String>,
     ) -> bool;
 }
 
@@ -98,7 +102,12 @@ impl NonFungibleTokenCore for Contract {
         let sender_id = env::predecessor_account_id();
 
         let previous_token =
-            self.internal_transfer(&sender_id, &receiver_id, &token_id, Some(approval_id), memo);
+            self.internal_transfer(&sender_id, &receiver_id, &token_id, Some(approval_id), memo.clone());
+
+        let mut authorized_id = None;
+        if sender_id != previous_token.owner_id {
+            authorized_id = Some(sender_id.to_string());
+        }
 
         // Thực hiện Cross Contract Call sang Contract của người nhận
         // -> Gọi hàm nft_on_transfer
@@ -112,10 +121,12 @@ impl NonFungibleTokenCore for Contract {
             env::prepaid_gas() - GAS_FOR_NFT_TRANSFER_CALL,
         )
         .then(ext_self::nft_resolve_transfer(
+            authorized_id,
             previous_token.owner_id,
             receiver_id,
             token_id,
             previous_token.approved_account_ids,
+            memo,
             &env::current_account_id(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
@@ -131,10 +142,12 @@ impl NonFungibleTokenResolver for Contract {
     // Xử lý call back của nft_on_transfer khi contract nhận gọi lại
     fn nft_resolve_transfer(
         &mut self,
+        authorized_id: Option<AccountId>,
         owner_id: AccountId,
         receiver_id: AccountId,
         token_id: TokenId,
         approved_account_ids: HashMap<AccountId, u64>,
+        memo: Option<String>,
     ) -> bool {
         if let PromiseResult::Successful(value) = env::promise_result(0) {
             // Thành công, chỉ có 1 promise
@@ -169,12 +182,28 @@ impl NonFungibleTokenResolver for Contract {
         self.internal_add_token_to_owner(&token_id, &owner_id); // Trả lại token cho owner cũ
 
         // Lấy lại các giá trị của token
-        token.owner_id = owner_id;
+        token.owner_id = owner_id.clone();
 
-        refund_approved_account_ids(receiver_id, &token.approved_account_ids);
+        refund_approved_account_ids(receiver_id.clone(), &token.approved_account_ids);
         token.approved_account_ids = approved_account_ids;
-        
+
         self.tokens_by_id.insert(&token_id, &token);
+
+        // Log lại thông tin về NFT transfer
+        // NFT TRANSFER LOG
+        let nft_transfer_log = EventLog {
+            standard: "nep171".to_string(),
+            version: "1.0.0".to_string(),
+            event: EventLogVariant::NftTransfer(vec![NftTransferLog {
+                authorized_id,
+                old_owner_id: receiver_id.to_string(),
+                new_owner_id: owner_id.to_string(),
+                token_ids: vec![token_id.to_string()],
+                memo
+            }])
+        };
+
+        env::log(&nft_transfer_log.to_string().as_bytes());
 
         false // Cho front-end biết là giao dịch thất bại -> Rollback toàn bộ data
     }

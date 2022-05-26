@@ -109,9 +109,30 @@ impl Contract {
         self.tokens_by_id.insert(token_id, &new_token);
 
         // Nếu có memo thì in ra memo
-        if let Some(memo) = memo {
+        if let Some(memo) = memo.as_ref() {
             log!("Memo: {}", memo);
         }
+
+        // NFT TRANSFER LOG
+        let mut authorized_id = None;
+        // Nếu có approval_id -> authorized_id chính là người gửi NFT
+        if approval_id.is_some() {
+            authorized_id = Some(sender_id.to_string());
+        }
+
+        let nft_transfer_log: EventLog = EventLog {
+            standard: "nep171".to_string(),
+            version: "1.0.0".to_string(),
+            event: EventLogVariant::NftTransfer(vec![NftTransferLog {
+                authorized_id,
+                old_owner_id: token.owner_id.to_string(),
+                new_owner_id: receiver_id.to_string(),
+                token_ids: vec![token_id.to_string()],
+                memo,
+            }]),
+        };
+
+        env::log(&nft_transfer_log.to_string().as_bytes());
 
         // Return token cũ
         token

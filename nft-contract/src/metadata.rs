@@ -15,6 +15,7 @@ pub struct JsonToken {
     pub owner_id: AccountId,
     pub token_id: TokenId,
     pub metadata: TokenMetadata,
+    pub approved_account_ids: HashMap<AccountId, u64>,
 }
 
 // Các metadata theo chuẩn NEP-177 của NEAR - Metadata
@@ -46,4 +47,15 @@ pub struct TokenMetadata {
     pub extra: Option<String>, // anything extra the NFT wants to store on-chain. Can be stringified JSON.
     pub reference: Option<String>, // URL to an off-chain JSON file with more info.
     pub reference_hash: Option<Base64VecU8>, // Base64-encoded sha256 hash of JSON from reference field. Required if `reference` is included.
+}
+
+pub trait NonFungibleTokenMetada {
+    fn nft_metadata(&self) -> NFTContractMetadata;
+}
+
+#[near_bindgen]
+impl NonFungibleTokenMetada for Contract {
+    fn nft_metadata(&self) -> NFTContractMetadata {
+        self.metadata.get().unwrap()
+    }
 }

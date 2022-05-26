@@ -1,11 +1,11 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, UnorderedMap, UnorderedSet};
-use near_sdk::json_types::Base64VecU8;
+use near_sdk::json_types::{Base64VecU8, U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{collections::LookupMap, AccountId};
 use near_sdk::{
     env, ext_contract, init, log, near_bindgen, Balance, CryptoHash, Gas, Promise, PromiseOrValue,
-    PromiseResult,
+    PromiseResult, PanicOnDefault,
 };
 use std::collections::HashMap;
 
@@ -18,6 +18,7 @@ pub use crate::metadata::*;
 pub use crate::mint::*;
 pub use crate::nft_core::*;
 pub use crate::utils::*;
+pub use crate::event::*;
 
 mod approval;
 mod enumeration;
@@ -26,10 +27,11 @@ mod metadata;
 mod mint;
 mod nft_core;
 mod utils;
+mod event;
 
 // State cơ bản của NFT contract
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 struct Contract {
     pub owner_id: AccountId,
 
@@ -53,6 +55,7 @@ pub enum StorageKey {
     },
 }
 
+#[near_bindgen]
 impl Contract {
     #[init]
     pub fn new(owner_id: AccountId, token_metadata: NFTContractMetadata) -> Self {
@@ -186,7 +189,7 @@ mod tests {
         testing_env!(context.attached_deposit(1).build());
 
         // --- Transfer nft từ accounts(0) sang accounts(1)
-        contract.nft_transfer(accounts(1).to_string(), token_id.clone(), 1, None);
+        contract.nft_transfer(accounts(1).to_string(), token_id.clone(), 0, None);
 
         let new_token = contract.nft_token(token_id.clone()).unwrap();
         // --- Kiểm tra các thông tin về owner

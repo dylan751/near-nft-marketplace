@@ -6,30 +6,32 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     // Lấy tổng số token đang có trong contract
-    pub fn nft_supply(&self) -> u64 {
+    pub fn nft_total_supply(&self) -> U128 {
         // Đếm tổng số lượng id đang có trong token_metadata_by_id
-        self.token_metadata_by_id.len()
+        U128(self.token_metadata_by_id.len() as u128)
     }
 
     // Lấy tổng số token đang có của account nào đó
-    pub fn nft_supply_for_owner(&self, account_id: AccountId) -> u64 {
+    pub fn nft_supply_for_owner(&self, account_id: AccountId) -> U128 {
         let token_for_owner_set = self.tokens_per_owner.get(&account_id);
 
         if let Some(token_for_owner_set) = token_for_owner_set {
-            token_for_owner_set.len() as u64
+            U128(token_for_owner_set.len() as u128)
         } else {
-            0
+            U128(0)
         }
     }
 
     // Lấy danh sách token (có pagination)
-    pub fn nft_tokens(&self, from_index: Option<u64>, limit: Option<u64>) -> Vec<JsonToken> {
+    pub fn nft_tokens(&self, from_index: Option<U128>, limit: Option<u64>) -> Vec<JsonToken> {
         let token_keys = self.token_metadata_by_id.keys_as_vector();
+
+        let start = u128::from(from_index.unwrap_or(U128(0)));
 
         // Duyệt tất cả các keys -> Trả về JsonToken
         token_keys
             .iter()
-            .skip(from_index.unwrap_or(0) as usize) // Pagination
+            .skip(start as usize) // Pagination
             .take(limit.unwrap_or(0) as usize) // Pagination
             .map(|token_id| self.nft_token(token_id.clone()).unwrap())
             .collect()
@@ -39,7 +41,7 @@ impl Contract {
     pub fn nft_tokens_for_owner(
         &self,
         account_id: AccountId,
-        from_index: Option<u64>,
+        from_index: Option<U128>,
         limit: Option<u64>,
     ) -> Vec<JsonToken> {
         let token_keys = self.tokens_per_owner.get(&account_id);
@@ -50,10 +52,12 @@ impl Contract {
             return vec![];
         };
 
+        let start = u128::from(from_index.unwrap_or(U128(0)));
+
         // Duyệt tất cả các keys -> Trả về JsonToken
         keys.as_vector()
             .iter()
-            .skip(from_index.unwrap_or(0) as usize) // Pagination
+            .skip(start as usize) // Pagination
             .take(limit.unwrap_or(0) as usize) // Pagination
             .map(|token_id| self.nft_token(token_id.clone()).unwrap())
             .collect()
