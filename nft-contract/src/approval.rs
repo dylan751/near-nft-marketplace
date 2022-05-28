@@ -45,6 +45,7 @@ impl NonFungibleTokenApproval for Contract {
     // Thêm quyền chuyển token cho account_id
     // Bổ sung account_id vào list approved_account_ids của Token
     // Note: Vì function này sẽ làm tăng data trong Contract -> Thêm payable để user deposit thêm
+    // Account ID => market contract id
     #[payable]
     fn nft_approve(&mut self, token_id: TokenId, account_id: AccountId, msg: Option<String>) {
         assert_at_least_one_yocto();
@@ -82,7 +83,8 @@ impl NonFungibleTokenApproval for Contract {
         // Refund nếu user nạp vào thừa phí lưu trữ
         refund_deposit(storage_used);
 
-        // Nếu có gắn msg -> Thực hiện Cross Contract Call
+        // Nếu có gắn msg -> Thực hiện Cross Contract Call sang market contract
+        // msg chứa thông tin: giá, hành động, hàm, ...
         if let Some(msg) = msg {
             ext_non_fungible_token_approval_receiver::nft_on_approve(
                 token_id,
