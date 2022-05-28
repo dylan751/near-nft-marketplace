@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/duongnh/Documents/learnCode/blockchain/near/neardevVN/nft-marketplace/market-contract/target/wasm32-unknown-unknown/release/build/typenum-df9b3a2937afe3be/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=/Users/duongnh/Documents/learnCode/blockchain/near/neardevVN/nft-marketplace/market-contract/target/wasm32-unknown-unknown/release/build/typenum-df9b3a2937afe3be/out/op.rs

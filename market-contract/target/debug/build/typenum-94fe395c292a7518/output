@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/duongnh/Documents/learnCode/blockchain/near/neardevVN/nft-marketplace/market-contract/target/debug/build/typenum-94fe395c292a7518/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=/Users/duongnh/Documents/learnCode/blockchain/near/neardevVN/nft-marketplace/market-contract/target/debug/build/typenum-94fe395c292a7518/out/op.rs

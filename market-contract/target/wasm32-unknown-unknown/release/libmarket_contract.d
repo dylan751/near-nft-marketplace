@@ -1,1 +1,0 @@
-/Users/duongnh/Documents/learnCode/blockchain/near/neardevVN/nft-marketplace/market-contract/target/wasm32-unknown-unknown/release/libmarket_contract.rlib: /Users/duongnh/Documents/learnCode/blockchain/near/neardevVN/nft-marketplace/market-contract/src/lib.rs
