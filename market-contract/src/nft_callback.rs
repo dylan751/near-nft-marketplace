@@ -9,8 +9,7 @@ pub trait NonFungibleTokenApprovalReceiver {
         owner_id: AccountId,
         approval_id: u64,
         msg: String,
-    ) {
-    }
+    );
 }
 
 // Cấu trúc của msg
@@ -105,6 +104,7 @@ impl NonFungibleTokenApprovalReceiver for Contract {
             });
 
         by_contract_id.insert(&token_id);
-        self.by_contract_id.insert(&nft_contract_id, &by_contract_id);
+        self.by_contract_id
+            .insert(&nft_contract_id, &by_contract_id);
     }
 }

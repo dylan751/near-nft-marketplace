@@ -1,18 +1,23 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap, UnorderedSet};
 use near_sdk::json_types::U128;
-use near_sdk::serde::{self, Deserialize, Serialize};
-use near_sdk::serde_json::{Deserializer, Serializer};
-use near_sdk::{env, near_bindgen, AccountId, Balance, CryptoHash, PanicOnDefault, Promise};
+use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::{
+    env, ext_contract, near_bindgen, AccountId, Balance, CryptoHash, Gas, PanicOnDefault, Promise,
+};
 
-use crate::nft_callback::*;
-use crate::sale_view::*;
-use crate::utils::*;
+pub use crate::internal::*;
+pub use crate::nft_callback::*;
+pub use crate::sale::*;
+pub use crate::sale_view::*;
+pub use crate::utils::*;
 
 // Coi như sau mỗi lần bán qua lại thì tăng storage lên 1000 bytes
 const STORAGE_PER_SALE: u128 = 1000 * env::STORAGE_PRICE_PER_BYTE;
 
+mod internal;
 mod nft_callback;
+mod sale;
 mod sale_view;
 mod utils;
 
@@ -108,7 +113,7 @@ impl Contract {
         let owner_id = env::predecessor_account_id();
 
         // Lấy ra lượng tiền đã deposit của user, đồng thời xoá user khỏi list đã deposit luôn
-        let mut amount = self.storage_deposit.remove(&owner_id).unwrap_or(0);
+        let amount = self.storage_deposit.remove(&owner_id).unwrap_or(0);
 
         // Tính tổng tiền cần để cover storage của user
         // Lượng tiền đã deposit thừa ra thì refund lại cho user
