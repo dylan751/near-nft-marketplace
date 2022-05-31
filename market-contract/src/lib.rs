@@ -73,6 +73,7 @@ pub enum StorageKey {
 
 #[near_bindgen]
 impl Contract {
+    #[init]
     pub fn new(owner_id: AccountId) -> Self {
         Self {
             owner_id,
