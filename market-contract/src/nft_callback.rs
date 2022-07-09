@@ -16,7 +16,7 @@ pub trait NonFungibleTokenApprovalReceiver {
 #[derive(Deserialize, Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct SaleArgs {
-    pub sale_conditions: SalePriceInYoctoNear,
+    pub sale_conditions: SalePrice,
 }
 
 #[near_bindgen]

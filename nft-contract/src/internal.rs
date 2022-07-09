@@ -103,6 +103,7 @@ impl Contract {
             owner_id: receiver_id.clone(),
             approved_account_ids: HashMap::default(), // Sau khi chuyển token cho người khác, xoá toàn bộ approved_account_ids
             next_approval_id: token.next_approval_id,
+            royalty: token.royalty.clone()
         };
 
         // Thêm token mới vào list tất cả tokens

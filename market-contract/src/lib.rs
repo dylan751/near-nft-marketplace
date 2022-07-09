@@ -1,9 +1,9 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap, UnorderedSet};
-use near_sdk::json_types::U128;
+use near_sdk::json_types::{U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
-    env, ext_contract, near_bindgen, AccountId, Balance, CryptoHash, Gas, PanicOnDefault, Promise,
+    env, ext_contract, near_bindgen, AccountId, Balance, CryptoHash, Gas, PanicOnDefault, Promise, PromiseOrValue
 };
 
 pub use crate::internal::*;
@@ -11,6 +11,7 @@ pub use crate::nft_callback::*;
 pub use crate::sale::*;
 pub use crate::sale_view::*;
 pub use crate::utils::*;
+pub use crate::ft_callback::*;
 
 // Coi như sau mỗi lần bán qua lại thì tăng storage lên 1000 bytes
 const STORAGE_PER_SALE: u128 = 1000 * env::STORAGE_PRICE_PER_BYTE;
@@ -20,13 +21,22 @@ mod nft_callback;
 mod sale;
 mod sale_view;
 mod utils;
+mod ft_callback;
 
 pub type TokenId = String;
 pub type NFTContractId = String;
-pub type SalePriceInYoctoNear = U128;
 // Để nếu có 2 Contract khác nhau cùng sử dụng market-contract này thì nếu trùng token id cũng ko sao
 // Có dạng nft.duongnh.testnet.ZNG_NFT#01
 pub type ContractAndTokenId = String;
+
+#[derive(Deserialize, Serialize, BorshSerialize, BorshDeserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct SalePrice {
+    is_native: bool,
+    contract_id: AccountId,
+    decimals: U64,
+    amount: U128
+}
 
 // Struct cho việc mua bán
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize)]
@@ -37,7 +47,7 @@ pub struct Sale {
     pub nft_contract_id: NFTContractId,
     pub token_id: TokenId,
     // Các điều kiện của sales (Giá, ...)
-    pub sale_conditions: SalePriceInYoctoNear,
+    pub sale_conditions: SalePrice,
 }
 
 #[near_bindgen]

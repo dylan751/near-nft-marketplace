@@ -31,6 +31,7 @@ pub trait NFTContract {
 #[ext_contract(ext_self)]
 pub trait MarketContract {
     fn resolve_purchase(&mut self, buyer_id: AccountId, price: U128) -> Promise;
+    fn ft_resolve_purchase(&mut self, buyer_id: AccountId, price: SalePrice) -> Promise;
 }
 
 #[near_bindgen]
@@ -51,7 +52,7 @@ impl Contract {
     }
 
     // Update giá của Sale
-    pub fn update_price(&mut self, nft_contract_id: AccountId, token_id: TokenId, price: U128) {
+    pub fn update_price(&mut self, nft_contract_id: AccountId, token_id: TokenId, price: SalePrice) {
         assert_one_yocto();
 
         let contract_and_token_id =
@@ -93,7 +94,7 @@ impl Contract {
         // Buyer và owner của NFT phải khác nhau (không thể tự mua NFT của chính mình được)
         assert_ne!(buyer_id, sale.owner_id, "Can not bid on your own sale");
 
-        let price = sale.sale_conditions.0;
+        let price = sale.sale_conditions.amount.0;
         assert!(
             deposit >= price,
             "Attached deposit must be grater than or equal current price: {}",

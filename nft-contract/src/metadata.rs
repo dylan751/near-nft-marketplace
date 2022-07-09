@@ -6,7 +6,8 @@ pub struct Token {
     // Danh sách các accounts được approved để transfer Token này
     pub approved_account_ids: HashMap<AccountId, u64>,
     // Id của approve tiếp theo
-    pub next_approval_id: u64
+    pub next_approval_id: u64,
+    pub royalty: HashMap<AccountId, u32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -16,6 +17,7 @@ pub struct JsonToken {
     pub token_id: TokenId,
     pub metadata: TokenMetadata,
     pub approved_account_ids: HashMap<AccountId, u64>,
+    pub royalty: HashMap<AccountId, u32>,
 }
 
 // Các metadata theo chuẩn NEP-177 của NEAR - Metadata

@@ -24,7 +24,7 @@
 4. Mint an NFT _(Note: token_id must be unique)_
 
    ```
-   near call nft.duongnh.testnet nft_mint '{"token_id": "ZNG_NFT#03", "receiver_id": "duongnh.testnet", "metadata": {"title": "NEAR LOGO", "description": "NEAR LOGO", "media": "https://bafkreibhsxpr4qbjqure75n6q6ywulozmb6e2tnedloq6v5em24f6nhmgm.ipfs.dweb.link/"}}' --deposit 0.1 --accountId duongnh.testnet
+   near call nft.duongnh.testnet nft_mint '{"token_id": "ZNG_NFT#03", "receiver_id": "duongnh.testnet", "metadata": {"title": "NEAR LOGO", "description": "NEAR LOGO", "media": "https://bafkreibhsxpr4qbjqure75n6q6ywulozmb6e2tnedloq6v5em24f6nhmgm.ipfs.dweb.link/"}, "perpetual_royalties": None}' --deposit 0.1 --accountId duongnh.testnet
    ```
 
 5. View the token we just minted

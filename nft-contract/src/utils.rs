@@ -67,3 +67,6 @@ where
 pub(crate) fn refund_approved_account_ids(sender_id: AccountId, approved_account_ids: &HashMap<AccountId, u64>) {
     refund_approved_account_ids_iter(sender_id, approved_account_ids.keys());
 }
+pub(crate) fn royalty_to_payout(royalty_percentage: u32, amount_to_pay: Balance) -> U128 {
+    U128(royalty_percentage as u128 * amount_to_pay / 10_000u128)
+}

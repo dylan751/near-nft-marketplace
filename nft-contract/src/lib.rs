@@ -4,8 +4,8 @@ use near_sdk::json_types::{Base64VecU8, U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{collections::LookupMap, AccountId};
 use near_sdk::{
-    env, ext_contract, init, log, near_bindgen, Balance, CryptoHash, Gas, Promise, PromiseOrValue,
-    PromiseResult, PanicOnDefault,
+    env, ext_contract, log, near_bindgen, Balance, CryptoHash, Gas, PanicOnDefault, Promise,
+    PromiseOrValue, PromiseResult,
 };
 use std::collections::HashMap;
 
@@ -13,21 +13,23 @@ pub type TokenId = String;
 
 pub use crate::approval::*;
 pub use crate::enumeration::*;
-use crate::internal::*;
+pub use crate::event::*;
+pub use crate::internal::*;
 pub use crate::metadata::*;
 pub use crate::mint::*;
 pub use crate::nft_core::*;
-pub use crate::utils::*;
-pub use crate::event::*;
+pub use crate::royalty::*;
+use crate::utils::*;
 
 mod approval;
 mod enumeration;
+mod event;
 mod internal;
 mod metadata;
 mod mint;
 mod nft_core;
+mod royalty;
 mod utils;
-mod event;
 
 // State cơ bản của NFT contract
 #[near_bindgen]
@@ -147,6 +149,7 @@ mod tests {
             token_id.clone(),
             get_sample_metadata(),
             accounts(0).to_string(),
+            None,
         );
 
         let token = contract.nft_token(token_id.clone()).unwrap();
@@ -178,6 +181,7 @@ mod tests {
             token_id.clone(),
             get_sample_metadata(),
             accounts(0).to_string(),
+            None,
         );
 
         let token = contract.nft_token(token_id.clone()).unwrap();
